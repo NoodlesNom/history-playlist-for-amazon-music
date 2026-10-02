@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "History Playlist for Amazon Music",
+  "version": "1.0.0",
+  "description": "On Amazon Music Song History, make a new playlist from the songs at the top of the list.",
+  "host_permissions": [
+    "https://music.amazon.com/*",
+    "https://music.amazon.ca/*",
+    "https://music.amazon.co.uk/*",
+    "https://music.amazon.com.au/*",
+    "https://music.amazon.in/*",
+    "https://music.amazon.ae/*",
+    "https://gql.music.amazon.com/*",
+    "https://gql.music.amazon.ca/*",
+    "https://gql.music.amazon.co.uk/*",
+    "https://gql.music.amazon.com.au/*",
+    "https://gql.music.amazon.in/*",
+    "https://gql.music.amazon.ae/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://music.amazon.com/*",
+        "https://music.amazon.ca/*",
+        "https://music.amazon.co.uk/*",
+        "https://music.amazon.com.au/*",
+        "https://music.amazon.in/*",
+        "https://music.amazon.ae/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_title": "Open Song History",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

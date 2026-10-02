@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy: History Playlist for Amazon Music</title>
+<meta name="description" content="Privacy notes for History Playlist for Amazon Music. The developer collects no data. Playlist creation uses the Amazon Music session already open in the browser.">
+<link rel="icon" href="img/icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="img/icon.png" alt="">History Playlist</a>
+    <nav><a href="./">Home</a><a href="https://github.com/NoodlesNom/history-playlist-for-amazon-music">GitHub</a></nav>
+  </div>
+</header>
+<main class="doc">
+  <h1>Privacy</h1>
+  <p class="note">History Playlist for Amazon Music · Version 1.0.0 · October 2, 2026</p>
+  <p>This page describes the Microsoft Edge extension "History Playlist for Amazon Music", published by NoodlesNom. The extension is not affiliated with Amazon. The developer collects no data.</p>
+
+  <h2>What it does</h2>
+  <ul>
+    <li>It is a content script on the English Amazon Music sites: music.amazon.com, .ca, .co.uk, .com.au, .in, and .ae.</li>
+    <li>The Make playlist button and panel appear only on expanded Song History.</li>
+    <li>It reads song links already shown on that page so it can collect unique track ids from the top of the list. Duplicate ids are skipped.</li>
+    <li>It scrolls that page so more Song History rows can load. Nothing is written to extension storage.</li>
+    <li>When you choose Create playlist, it asks Amazon Music, with the sign-in already in that tab, to create a new public playlist with the name you typed and to add those track ids. That request goes to Amazon (music.amazon and gql.music.amazon), not to the developer.</li>
+    <li>It then loads the new playlist with a full page load.</li>
+    <li>The toolbar icon opens https://music.amazon.com/recently/played/songs. If the current tab is already an English Amazon Music site, it uses that tab. Otherwise it opens a new tab. That click does not read other sites' page contents.</li>
+  </ul>
+
+  <h2>What it does not do</h2>
+  <ul>
+    <li>It does not send Song History, titles, or track ids to the developer. There is no analytics, no tracker, and no server run by the developer.</li>
+    <li>It does not ask for your Amazon password. It uses the session the Amazon Music page already has.</li>
+    <li>It does not play, pause, or skip.</li>
+    <li>It does not download or display lyrics.</li>
+    <li>It does not change Find in Playlist or Lyrics Translate.</li>
+  </ul>
+
+  <p><a href="./">Back to History Playlist</a></p>
+</main>
+<footer>
+  <div class="wrap">
+    <p>History Playlist for Amazon Music · MIT License · © NoodlesNom</p>
+    <p><a href="https://github.com/NoodlesNom/history-playlist-for-amazon-music">Source code</a></p>
+  </div>
+</footer>
+</body>
+</html>
