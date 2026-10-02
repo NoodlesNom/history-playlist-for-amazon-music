@@ -25,7 +25,8 @@ nav a:hover { color: var(--text); }
 .note { font-size: 13px; color: var(--muted); }
 .note.versions { margin: 0 0 6px; }
 .btn .bver { font-variant-numeric: tabular-nums; opacity: .85; font-weight: 500; }
-.shot { margin-top: 40px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0, 0, 0, .55); }
+.shot { width: min(100%, 828px); margin: 40px auto 0; }
+.shot img { width: 100%; height: auto; }
 section { padding: 64px 0; border-top: 1px solid var(--line); }
 section h2 { font-size: 32px; margin: 0 0 10px; letter-spacing: -.01em; }
 section > .wrap > p.sub { color: var(--muted); margin: 0 0 32px; max-width: 760px; }
