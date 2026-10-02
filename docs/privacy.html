@@ -27,7 +27,6 @@
     <li>It reads song links already shown on that page so it can collect unique track ids from the top of the list. Duplicate ids are skipped.</li>
     <li>It scrolls that page so more Song History rows can load. Nothing is written to extension storage.</li>
     <li>When you choose Create playlist, it asks Amazon Music, with the sign-in already in that tab, to create a new public playlist with the name you typed and to add those track ids. That request goes to Amazon (music.amazon and gql.music.amazon), not to the developer.</li>
-    <li>It then loads the new playlist with a full page load.</li>
     <li>The toolbar icon opens https://music.amazon.com/recently/played/songs. If the current tab is already an English Amazon Music site, it uses that tab. Otherwise it opens a new tab. That click does not read other sites' page contents.</li>
   </ul>
 
