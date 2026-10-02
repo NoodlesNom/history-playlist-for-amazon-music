@@ -25,7 +25,7 @@ nav a:hover { color: var(--text); }
 .note { font-size: 13px; color: var(--muted); }
 .note.versions { margin: 0 0 6px; }
 .btn .bver { font-variant-numeric: tabular-nums; opacity: .85; font-weight: 500; }
-.shot { width: min(100%, 828px); margin: 40px auto 0; }
+.shot { width: min(100%, 828px); margin: 40px auto 0; border-radius: var(--radius); overflow: hidden; }
 .shot img { width: 100%; height: auto; }
 section { padding: 64px 0; border-top: 1px solid var(--line); }
 section h2 { font-size: 32px; margin: 0 0 10px; letter-spacing: -.01em; }
