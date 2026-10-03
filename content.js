@@ -432,6 +432,16 @@
     return new URL('/playlists/' + encodeURIComponent(created.id), location.origin).href;
   }
 
+  // Same-document navigation. history.pushState is what an in-app link uses
+  // after the site router wraps it. popstate wakes listeners that only watch
+  // back/forward. This is not a form submit and not a location assignment.
+  function openPlaylistInApp(created) {
+    const parsed = new URL(playlistPage(created), location.origin);
+    const path = parsed.pathname + parsed.search + parsed.hash;
+    history.pushState(null, '', path);
+    window.dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
+  }
+
   function setStatus(text, isError) {
     if (!pop) return;
     const el = pop.querySelector('.amhp-status');
@@ -469,22 +479,11 @@
         msg += ' Song History ended after ' + ids.length + ' unique songs.';
       }
       setStatus(msg, false);
-      // Absolute URL + native form submit: a real document load, not the SPA router.
-      const playlistUrl = playlistPage(created);
-      const parsed = new URL(playlistUrl, location.origin);
-      const form = document.createElement('form');
-      form.method = 'GET';
-      form.action = parsed.origin + parsed.pathname;
-      form.target = '_top';
-      parsed.searchParams.forEach((value, key) => {
-        const field = document.createElement('input');
-        field.type = 'hidden';
-        field.name = key;
-        field.value = value;
-        form.appendChild(field);
-      });
-      document.documentElement.appendChild(form);
-      form.submit();
+      createdThisDocument = true;
+      try {
+        await chrome.storage.local.set({ amhpPendingLibraryRefresh: true });
+      } catch (err) { /* still open the playlist */ }
+      openPlaylistInApp(created);
     } catch (err) {
       const message = err && err.message ? err.message : String(err);
       setStatus(message, true);
@@ -577,6 +576,60 @@
   function sync() {
     if (onHistory()) ensureButton();
     else removeUi();
+    maybeHardLibraryRefresh();
+  }
+
+  // Real library screen only. A playlist detail and Song History are not it,
+  // even when the Library tab stays highlighted.
+  function onLibraryPage() {
+    const path = location.pathname || '';
+    if (/\/playlists\/[^/?#]+/i.test(path)) return false;
+    if (path.indexOf('/recently/') !== -1) return false;
+    if (/(^|\/)library(\/|$)/i.test(path)) return true;
+    if (/(^|\/)my-library(\/|$)/i.test(path)) return true;
+    return false;
+  }
+
+  const LIBRARY_REFRESH_KEY = 'amhpPendingLibraryRefresh';
+  let createdThisDocument = false;
+  let leftLibrarySinceLoad = false;
+  let libraryReloadSent = false;
+  let libraryReadySince = 0;
+  let pageGoingAway = false;
+
+  function libraryFinishedLoading() {
+    if (document.readyState !== 'complete') return false;
+    const tiles = deepQueryAll('[data-testid="Tile,VerticalItem_Tile"]');
+    const painted = tiles.some((el) => {
+      if (!el || isOurs(el)) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 40 && rect.height > 40 && rect.bottom > 80 && rect.top < window.innerHeight;
+    });
+    if (!painted) return false;
+    if (!libraryReadySince) libraryReadySince = Date.now();
+    return Date.now() - libraryReadySince >= 400;
+  }
+
+  function maybeHardLibraryRefresh() {
+    if (libraryReloadSent || pageGoingAway || busy) return;
+    // Creating and the playlist we just opened must not consume the flag.
+    if (!onLibraryPage()) {
+      leftLibrarySinceLoad = true;
+      libraryReadySince = 0;
+      return;
+    }
+    if (!libraryFinishedLoading()) return;
+    if (createdThisDocument && !leftLibrarySinceLoad) return;
+    chrome.storage.local.get(LIBRARY_REFRESH_KEY, (data) => {
+      const pending = !!(data && data[LIBRARY_REFRESH_KEY]);
+      if (!pending || libraryReloadSent || pageGoingAway || busy) return;
+      if (!onLibraryPage() || !libraryFinishedLoading()) return;
+      if (createdThisDocument && !leftLibrarySinceLoad) return;
+      libraryReloadSent = true;
+      chrome.storage.local.remove(LIBRARY_REFRESH_KEY, () => {
+        chrome.runtime.sendMessage({ type: 'amhp-hard-reload' });
+      });
+    });
   }
 
   document.addEventListener('click', (event) => {
@@ -603,6 +656,13 @@
     return result;
   };
   window.addEventListener('popstate', sync);
+
+  function onPageLeaving() {
+    pageGoingAway = true;
+  }
+  window.addEventListener('pagehide', onPageLeaving);
+  window.addEventListener('beforeunload', onPageLeaving);
+  leftLibrarySinceLoad = !onLibraryPage();
 
   const titleEl = document.querySelector('title');
   if (titleEl && window.MutationObserver) {

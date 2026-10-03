@@ -19,3 +19,10 @@ chrome.action.onClicked.addListener((tab) => {
   }
   chrome.tabs.create({ url: HISTORY_URL });
 });
+
+chrome.runtime.onMessage.addListener((message, sender) => {
+  if (!message || message.type !== 'amhp-hard-reload') return;
+  const tabId = sender && sender.tab && sender.tab.id;
+  if (typeof tabId === 'number') chrome.tabs.reload(tabId, { bypassCache: true });
+});
+

@@ -1,8 +1,12 @@
 {
   "manifest_version": 3,
   "name": "History Playlist for Amazon Music",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "On Amazon Music Song History, make a new playlist from the songs at the top of the list.",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
   "host_permissions": [
     "https://music.amazon.com/*",
     "https://music.amazon.ca/*",
