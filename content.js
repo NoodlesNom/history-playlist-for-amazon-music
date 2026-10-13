@@ -195,23 +195,75 @@
     return null;
   }
 
+  function containsCount(el, rows) {
+    let c = 0;
+    for (let i = 0; i < rows.length; i++) {
+      let n = rows[i];
+      while (n) {
+        if (n === el) { c++; break; }
+        n = parentOf(n);
+      }
+    }
+    return c;
+  }
+
+  // The scroller must scroll vertically and hold most found rows; a
+  // horizontal shelf or a side panel that happens to wrap a row is ignored.
   function largestScroller(rows) {
     let best = null;
     let range = 0;
+    const checked = new Set();
+    const need = Math.max(1, Math.ceil(rows.length / 2));
     for (let i = 0; i < rows.length; i++) {
       let n = rows[i];
       while (n && n !== document.documentElement) {
-        if (n.nodeType === 1) {
+        if (n.nodeType === 1 && !checked.has(n)) {
+          checked.add(n);
           const span = n.scrollHeight - n.clientHeight;
-          if (span > range) {
-            range = span;
-            best = n;
+          const hspan = n.scrollWidth - n.clientWidth;
+          if (span > range && span > hspan && containsCount(n, rows) >= need) {
+            let oy = '';
+            try { oy = getComputedStyle(n).overflowY; } catch (err) { /* ignore */ }
+            if (oy !== 'hidden') {
+              range = span;
+              best = n;
+            }
           }
         }
         n = parentOf(n);
       }
     }
     return range > 24 ? best : null;
+  }
+
+  // Other things to scroll when the picked scroller stops loading rows.
+  function fallbackScrollers(rows, tried) {
+    const out = [];
+    const add = (el) => { if (el && !tried.has(el) && out.indexOf(el) < 0) out.push(el); };
+    add(document.scrollingElement || document.documentElement);
+    const last = rows.length ? rows[rows.length - 1] : null;
+    if (last) {
+      add(scrollParent(last));
+      let n = parentOf(last);
+      while (n && n !== document.documentElement) {
+        if (n.nodeType === 1 && canScroll(n)) add(n);
+        n = parentOf(n);
+      }
+    }
+    return out;
+  }
+
+  function isPageScroller(el) {
+    return el === document.scrollingElement || el === document.documentElement || el === document.body;
+  }
+
+  function nudgeWindow() {
+    try {
+      window.scrollBy(0, Math.max(200, Math.floor(window.innerHeight * 0.6)));
+      const h = Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0);
+      if (window.innerHeight + window.scrollY >= h - 8) window.scrollTo(0, h);
+      window.dispatchEvent(new Event('scroll'));
+    } catch (err) { /* ignore */ }
   }
 
   function anchorElements() {
@@ -290,11 +342,28 @@
       if (songRowsInView(scroller).length) break;
     }
     let stagnant = 0;
+    let forced = null;
+    const tried = new Set();
+    let pending = null;
+    // Called when the current scroller is stagnant; switches to the next
+    // candidate, or returns false once every candidate has been tried.
+    const switchScroller = (cur) => {
+      if (cur) tried.add(cur);
+      if (pending === null) pending = fallbackScrollers(anchorElements(), tried);
+      while (pending.length) {
+        const next = pending.shift();
+        if (tried.has(next)) continue;
+        forced = next;
+        stagnant = 0;
+        return true;
+      }
+      return false;
+    };
     const started = Date.now();
     for (let step = 0; step < 400; step++) {
       if (gen !== generation) throw new Error('Cancelled.');
       if (!onHistory()) throw new Error('Left Song History before the songs were collected.');
-      const sc = pickScroller() || scroller;
+      const sc = forced || pickScroller() || scroller;
       const before = ids.length;
       const rows = songRowsInView(sc);
       lastRowsSeen = Math.max(lastRowsSeen, countRows());
@@ -313,6 +382,7 @@
       }
       if (atBottom(sc)) {
         const heightBefore = sc.scrollHeight;
+        if (isPageScroller(sc)) nudgeWindow();
         const maxNow = Math.max(0, sc.scrollHeight - sc.clientHeight);
         sc.scrollTop = Math.max(0, maxNow - 40);
         await wait(60);
@@ -328,14 +398,15 @@
           continue;
         }
         stagnant += 1;
-        if (stagnant >= 4) break;
+        if (stagnant >= 4 && !switchScroller(sc)) break;
         continue;
       }
+      if (isPageScroller(sc)) nudgeWindow();
       const moved = advance(sc);
       await wait(grew ? 140 : 220);
       if (moved < 2 && !grew) {
         stagnant += 1;
-        if (stagnant >= 4) break;
+        if (stagnant >= 4 && !switchScroller(sc)) break;
       } else if (grew) {
         stagnant = 0;
       }
