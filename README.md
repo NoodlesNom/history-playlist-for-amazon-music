@@ -1,12 +1,16 @@
 # History Playlist for Amazon Music
 
-A free Microsoft Edge extension that makes a new playlist from Amazon Music Song History. Version 1.0.0.
+A free Microsoft Edge extension that makes a new playlist from Amazon Music Song History. Version 1.0.2.
 
 On the expanded Song History page (`/recently/played/songs`), a **Make playlist** button opens an in-page panel. You name the playlist and choose how many songs from the top of the list. The extension scrolls Song History so more rows load, skips songs it has already counted, creates a new playlist, adds those songs, then loads that playlist with a full page load.
 
 The toolbar icon opens [Song History](https://music.amazon.com/recently/played/songs) in the current tab when that tab is already Amazon Music, and in a new tab otherwise. The in-page button stays.
 
 It sits with [Find in Playlist for Amazon Music](https://noodlesnom.github.io/find-in-playlist-for-amazon-music/) and [Lyrics Translate & Romanize for Amazon Music](https://noodlesnom.github.io/lyrics-translate-for-amazon-music/). The three buttons stack. This extension does not remove either of the others.
+
+## What's new in 1.0.2
+
+Fixed “No songs found” on Amazon Music sites where song rows link to the album, such as music.amazon.co.uk. If nothing is found, the message now says how many rows were seen.
 
 Not affiliated with Amazon.
 

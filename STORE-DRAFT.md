@@ -2,7 +2,7 @@
 
 Do not submit this. Paste it into Partner Center only when you choose to publish.
 
-The short description is not a separate store field you can type. Microsoft Edge Add-ons uses the `description` string in `manifest.json`. That string is already set to the short description below. The extension name in the manifest is already the name below. Version in the package is 1.0.0. This draft was not submitted.
+The short description is not a separate store field you can type. Microsoft Edge Add-ons uses the `description` string in `manifest.json`. That string is already set to the short description below. The extension name in the manifest is already the name below. Version in the package is 1.0.2. This draft was not submitted.
 
 ## Name
 
@@ -69,7 +69,8 @@ Suggested privacy disclosure for the listing: this extension does not collect or
 ## Listing fields
 
 NAME (from manifest): History Playlist for Amazon Music
-VERSION: 1.0.0
+VERSION: 1.0.2
+WHAT'S NEW: Fixed “No songs found” on sites like music.amazon.co.uk where song rows link to the album.
 SHORT DESCRIPTION (from manifest description): On Amazon Music Song History, make a new playlist from the songs at the top of the list.
 
 CATEGORY: Productivity
@@ -99,7 +100,7 @@ PRIVACY POLICY URL: https://noodlesnom.github.io/history-playlist-for-amazon-mus
 
 LOGO: icons/icon128.png in this repository (also /workspace/history-playlist-for-amazon-music/icons/icon128.png). 128x128.
 
-PACKAGE: /workspace/history-playlist-edge-1.0.0.zip
+PACKAGE: /workspace/history-playlist-1.0.2.zip
 
 SCREENSHOT: /workspace/listing-shots/history-playlist-song-history.png
 

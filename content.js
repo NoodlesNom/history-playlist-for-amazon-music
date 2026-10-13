@@ -10,6 +10,10 @@
   // Amazon's UI sends one id as trackIds: [$trackId]. The field itself is a list.
   const APPEND_MUTATION = 'mutation addTrackToPlaylist($id: String!, $trackIds: [String], $rejectDuplicateTracks: Boolean) { appendTracks(playlistId: $id, trackIds: $trackIds, rejectDuplicateTracks: $rejectDuplicateTracks) { id trackCount } }';
   const TRACK_HREF = /\/tracks\/([^/?#]+)/;
+  // Some sites (seen on .co.uk) link a song row to its album: /albums/<album>?trackAsin=<song>.
+  const TRACK_ASIN_PARAM = /[?&]trackAsin=([A-Za-z0-9]{10})(?:[&#]|$)/;
+  const SONG_LINK_SELECTOR = 'a[href*="/tracks/"], [href*="/tracks/"], [primary-href*="/tracks/"], a[href*="trackAsin="], [href*="trackAsin="], [primary-href*="trackAsin="]';
+  let lastRowsSeen = 0;
 
   let btn = null;
   let pop = null;
@@ -93,19 +97,31 @@
       }
     } catch (err) { /* keep raw */ }
     const match = TRACK_HREF.exec(path);
-    if (!match) return '';
-    try { return decodeURIComponent(match[1]); } catch (err) { return match[1]; }
+    if (match) {
+      try { return decodeURIComponent(match[1]); } catch (err) { return match[1]; }
+    }
+    const asin = TRACK_ASIN_PARAM.exec(path);
+    return asin ? asin[1] : '';
   }
+
+  function trackIdFromHrefRaw(h) { return TRACK_HREF.test(h) || TRACK_ASIN_PARAM.test(h); }
 
   function hrefOf(el) {
     if (!el) return '';
-    const direct = attr(el, 'href') || attr(el, 'primary-href');
-    if (direct) return direct;
+    const own = [attr(el, 'href'), attr(el, 'primary-href')].filter(Boolean);
+    // Prefer a /tracks/ link, then an album+trackAsin link, then anything.
+    for (let i = 0; i < own.length; i++) if (TRACK_HREF.test(own[i])) return own[i];
+    for (let i = 0; i < own.length; i++) if (TRACK_ASIN_PARAM.test(own[i])) return own[i];
     if (el.shadowRoot) {
-      const a = el.shadowRoot.querySelector('a[href], [href], [primary-href]');
-      if (a) return attr(a, 'href') || attr(a, 'primary-href');
+      const song = el.shadowRoot.querySelector(SONG_LINK_SELECTOR);
+      const sh = song ? (attr(song, 'href') || attr(song, 'primary-href')) : '';
+      if (sh && trackIdFromHrefRaw(sh)) return sh;
+      if (!own.length) {
+        const a = el.shadowRoot.querySelector('a[href], [href], [primary-href]');
+        if (a) return attr(a, 'href') || attr(a, 'primary-href');
+      }
     }
-    return '';
+    return own[0] || '';
   }
 
   function rowRoot(el) {
@@ -123,7 +139,8 @@
     return found;
   }
 
-  // One song row: a history row whose own link is /tracks/<Track.id>.
+  // One song row: a history row whose own link is /tracks/<Track.id>, or
+  // /albums/<album>?trackAsin=<Track.id>. Plain album links are not songs.
   // Artist, album, and playlist links are not song ids. Player-bar links are not history.
   function insideScroller(scroller, row) {
     if (!scroller) return true;
@@ -139,7 +156,7 @@
   // Mounted song rows in this scroller, top to bottom. A virtual list only
   // mounts a window, so callers must scroll slowly and keep ids already seen.
   function songRowsInView(scroller) {
-    const nodes = deepQueryAll('a[href*="/tracks/"], [href*="/tracks/"], [primary-href*="/tracks/"]');
+    const nodes = deepQueryAll(SONG_LINK_SELECTOR);
     const rows = [];
     const seen = new Set();
     for (let i = 0; i < nodes.length; i++) {
@@ -198,7 +215,7 @@
   }
 
   function anchorElements() {
-    return deepQueryAll('a[href*="/tracks/"], [href*="/tracks/"], [primary-href*="/tracks/"]').filter((el) => {
+    return deepQueryAll(SONG_LINK_SELECTOR).filter((el) => {
       return !isOurs(el) && !isPlayerChrome(el) && trackIdFromHref(hrefOf(el));
     }).map(rowRoot);
   }
@@ -255,7 +272,14 @@
     return new Promise((resolve) => { window.setTimeout(resolve, ms); });
   }
 
+  // History rows mounted right now, whether or not they carry a song link.
+  function countRows() {
+    return deepQueryAll('music-horizontal-item, music-image-row, music-track-list-row, [data-testid^="HorizontalItem"], [data-testid="ListItem"]')
+      .filter((el) => !isOurs(el) && !isPlayerChrome(el)).length;
+  }
+
   async function collectSongs(want, onProgress, gen) {
+    lastRowsSeen = 0;
     const ids = [];
     const seen = new Set();
     let scroller = null;
@@ -273,6 +297,7 @@
       const sc = pickScroller() || scroller;
       const before = ids.length;
       const rows = songRowsInView(sc);
+      lastRowsSeen = Math.max(lastRowsSeen, countRows());
       for (let i = 0; i < rows.length; i++) {
         if (seen.has(rows[i].id)) continue;
         seen.add(rows[i].id);
@@ -461,7 +486,7 @@
         if (gen !== generation) return;
         setStatus('Found ' + found + ' of ' + want, false);
       }, gen);
-      if (!ids.length) throw new Error('No songs found in Song History.');
+      if (!ids.length) throw new Error('No songs found in Song History (saw ' + lastRowsSeen + ' rows, 0 with song links).');
       if (!onHistory()) throw new Error('Left Song History. The playlist was not created.');
       setStatus('Creating playlist\u2026', false);
       const createdData = await gql('PlaylistModalCreatePlaylist', CREATE_MUTATION, {
